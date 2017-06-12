@@ -7,6 +7,7 @@ pad_width = 1024            # 게임판 폭
 pad_height = 512            # 게임판 높이
 background_width = 1024     # 배경화면 폭
 bat_width = 110
+bat_height = 67
 aircraft_width = 90
 aircraft_height = 55
 
@@ -25,7 +26,10 @@ def drawObject(obj, x, y):      # 화면에 객체를 그리는 함수(비행기
 def runGame():
     # 실제 게임이 구동되는 함수
     global gamepad, aircraft, clock, background1, background2     # 전역변수로 사용 설정
-    global bat, fires, bullet
+    global bat, fires, bullet, boom
+
+    isShotBat = False
+    boom_count = 0
 
     bullet_xy = []                                   # 왼쪽 컨트롤 키를 누를때마다 총알의 위치를 저장할 리스트
 
@@ -115,11 +119,21 @@ def runGame():
             for i, bxy in enumerate(bullet_xy):     # 하나씩 가져 옵시다.
                 bxy[0] += 15                         # 총알속도는 15픽셀
                 bullet_xy[i][0] = bxy[0]
+
+                # 총알이 박쥐와 부딪혔는지 체크
+                if bxy[0] > bat_x:
+                    if bxy[1] > bat_y and bxy[1] < bat_y + bat_height:
+                        bullet_xy.remove(bxy)
+                        isShotBat = True
+
                 if bxy[0] >= pad_width:             # 총알이 화면을 벗어나면
-                    bullet_xy.remove(bxy)           # 총알 삭제
+                    try:
+                        bullet_xy.remove(bxy)           # 총알 삭제
+                    except:
+                        pass
 
         drawObject(aircraft, x, y)
-        drawObject(bat, bat_x, bat_y)
+        #drawObject(bat, bat_x, bat_y)
 
         if fire != None:
             drawObject(fire, fire_x, fire_y)
@@ -127,6 +141,17 @@ def runGame():
         if len(bullet_xy) != 0:
             for bx, by in bullet_xy:
                 drawObject(bullet, bx, by)
+
+        if not isShotBat:
+            drawObject(bat, bat_x, bat_y)
+        else:
+            drawObject(boom, bat_x, bat_y)
+            boom_count += 1
+            if boom_count > 5:
+                boom_count = 0
+                bat_x = pad_width
+                bat_y = random.randrange(0, pad_height - bat_height)
+                isShotBat = False
 
         pygame.display.update()                     # 게임판을 다시 그림
         clock.tick(60)                              # FPS를 60으로 설정
@@ -137,7 +162,7 @@ def runGame():
 def initGame():
     # 게임 초기화/시작 함수
     global gamepad, aircraft, clock, background1, background2     # 전역변수로 사용 설정
-    global bat, fires, bullet
+    global bat, fires, bullet, boom
 
     fires = []                                                  # 불덩어리 2개와 None 객체 5개를 담을 리스트
 
@@ -151,6 +176,7 @@ def initGame():
     fires.append(pygame.image.load('images/fireball.png'))
     fires.append(pygame.image.load('images/fireball2.png'))
     bullet = pygame.image.load('images/bullet.png')
+    boom = pygame.image.load('images/boom.png')
 
     for i in range(5):
         fires.append(None)
